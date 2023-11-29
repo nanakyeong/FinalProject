@@ -33,9 +33,9 @@ int GetAround(int x, int y, int b, int r);
 BOOL MoveDown();
 BOOL TimeStop = FALSE; //시간 정지 상태
 void TestFull();
-void next_brick();//다음 블록   
+void next_brick(BOOL Show);//다음 블록   
 void pre();//블록 미리보기
-void RandomItem();//아이템 증정
+void RandomItem(char item);//아이템 증정
 void BoardDelete();// @ 아이템의 블록 표현
 void ShowRemove();//블록 내려오기
 void RemoveLine();//라인 제거하고 블록 떨어뜨리기
@@ -60,7 +60,7 @@ int board[BW + 2][BH + 2];
 int nx, ny;
 int brick, rot;
 int n_brick, n_rot;
-int score = 0;
+//int score = 0;
 int level = 1;
 
 bool AskUserForMusic()
@@ -92,9 +92,9 @@ int main()
 
     int nFrame, nStay;
     int x, y;
-   if (AskUserForMusic()) {
-    PlayBackgroundMusic();
-   }
+    if (AskUserForMusic()) {
+        PlayBackgroundMusic();
+    }
 
     showcursor(FALSE);
     randomize();
@@ -163,10 +163,10 @@ int main()
     }
     clrscr();
     putsxy(30, 12, "G A M E  O V E R");
-   PlaySound(TEXT(R"(C:\Users\geniu\Desktop\sound_Asset\negative_beeps.wav)"), NULL, SND_FILENAME); //종료 사운드 부분 추가
-   PlaySound(NULL, NULL, 0);
+    PlaySound(TEXT(R"(C:\Users\geniu\Desktop\sound_Asset\negative_beeps.wav)"), NULL, SND_FILENAME); //종료 사운드 부분 추가
+    PlaySound(NULL, NULL, 0);
     gotoxy(50, 14); printf("LV : %d", level);
-   putxyfn(30, 15, "Best score: %d \n", score);
+    putxyfn(30, 15, "Best score: %d \n", score);
     showcursor(TRUE);
 }
 
@@ -316,7 +316,7 @@ BOOL MoveDown()
     if (GetAround(nx, ny + 1, brick, rot) != EMPTY) {
         RemoveLine();
         TestFull();
-       PlaySound(TEXT(R"(C:\Users\geniu\Desktop\sound_Asset\ping.wav)"), NULL, SND_FILENAME | SND_ASYNC); //충돌 사운드 관련 추가
+        PlaySound(TEXT(R"(C:\Users\geniu\Desktop\sound_Asset\ping.wav)"), NULL, SND_FILENAME | SND_ASYNC); //충돌 사운드 관련 추가
         return TRUE;
     }
     // 아직 공중에 떠 있으면 한칸 아래로 내린다.
@@ -344,7 +344,7 @@ void TestFull()
         }
         // 한줄이 가득 찼으면 이 줄을 제거한다.
         if (bFull) {
-           score += 100;
+            score += 100;
             for (int ty = y; ty > 1; ty--) {
                 for (int x = 1; x < BW + 1; x++) {
                     board[x][ty] = board[x][ty - 1];
