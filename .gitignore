@@ -1,0 +1,10 @@
+# .gitginore
+# ignore All
+*
+!*/
+
+# Allow list
+!.gitignore
+!.gitattributes
+!*.c
+!*.cpp
