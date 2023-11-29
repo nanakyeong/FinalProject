@@ -189,6 +189,11 @@ void DrawScreen()
     putsxy(50, 3, "Tetris Ver 1.0");
     putsxy(50, 5, "좌우:이동, 위:회전, 아래:내림");
     putsxy(50, 6, "공백:전부 내림");
+    putsxy(32, 12, "+: 시간 정지");
+    putsxy(32, 13, "@ : 3 * 3 블록 없애기");
+    putsxy(32, 14, "-: 한 줄 없애기");
+    putsxy(32, 15, "* : 다른 블록 교환");
+    putsxy(32, 16, "／：미리보기 가리기");
 }
 
 BOOL ProcessKey()
