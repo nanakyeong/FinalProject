@@ -4,7 +4,9 @@
 #include <conio.h>
 #include <windows.h>
 #include <time.h>
+#include <mmsystem.h>//음원관련 추가사항
 
+#pragma comment(lib, "winmm.lib") //사운드 부분 추가사항
 #define randomize() srand((unsigned)time(NULL))
 #define random(n) (rand() % (n))
 #define delay(n) Sleep(n)
@@ -13,13 +15,16 @@
    SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE),Cur);}
 #define showcursor(bShow) { CONSOLE_CURSOR_INFO CurInfo = {20, bShow}; \
    SetConsoleCursorInfo(GetStdHandle(STD_OUTPUT_HANDLE),&CurInfo); }
+#define putxyfn(x,y,format, value) {gotoxy(x,y);printf(format,value);}//추가
 
 enum { ESC = 27, LEFT = 75, RIGHT = 77, UP = 72, DOWN = 80 };
 #define putsxy(x, y, s) {gotoxy(x, y);puts(s);}
+#define putxyfn(x,y,format, value) {gotoxy(x,y);printf(format,value);}//추가
 #define BX 5
 #define BY 1
 #define BW 10
 #define BH 20
+int score = 0; //추가
 
 void DrawScreen();
 BOOL ProcessKey();
@@ -58,11 +63,38 @@ int n_brick, n_rot;
 int score = 0;
 int level = 1;
 
+bool AskUserForMusic()
+{
+    putsxy(30, 10, "배경음악을 재생할까요? (Y/N)");
+    while (true) {
+        if (_kbhit()) {
+            int ch = _getch();
+            if (ch == 'Y' || ch == 'y') {
+                return true;
+
+            }
+            else if (ch == 'N' || ch == 'n') {
+                return false;
+            }
+        }
+        delay(100);
+    }
+}
+
+void PlayBackgroundMusic()
+{
+    PlaySound(NULL, NULL, 0);
+    PlaySound(TEXT(R"(C:\Users\geniu\Desktop\sound_Asset\BGM.wav)"), NULL, SND_FILENAME | SND_ASYNC | SND_LOOP);
+}
+
 int main()
 {
 
     int nFrame, nStay;
     int x, y;
+   if (AskUserForMusic()) {
+    PlayBackgroundMusic();
+   }
 
     showcursor(FALSE);
     randomize();
@@ -131,7 +163,10 @@ int main()
     }
     clrscr();
     putsxy(30, 12, "G A M E  O V E R");
+   PlaySound(TEXT(R"(C:\Users\geniu\Desktop\sound_Asset\negative_beeps.wav)"), NULL, SND_FILENAME); //종료 사운드 부분 추가
+   PlaySound(NULL, NULL, 0);
     gotoxy(50, 14); printf("LV : %d", level);
+   putxyfn(30, 15, "Best score: %d \n", score);
     showcursor(TRUE);
 }
 
@@ -189,11 +224,7 @@ void DrawScreen()
     putsxy(50, 3, "Tetris Ver 1.0");
     putsxy(50, 5, "좌우:이동, 위:회전, 아래:내림");
     putsxy(50, 6, "공백:전부 내림");
-    putsxy(32, 12, "+: 시간 정지");
-    putsxy(32, 13, "@ : 3 * 3 블록 없애기");
-    putsxy(32, 14, "-: 한 줄 없애기");
-    putsxy(32, 15, "* : 다른 블록 교환");
-    putsxy(32, 16, "／：미리보기 가리기");
+   putxyfn(50, 8, "Score: %d", score);//추가
 }
 
 BOOL ProcessKey()
@@ -280,6 +311,7 @@ BOOL MoveDown()
     if (GetAround(nx, ny + 1, brick, rot) != EMPTY) {
         RemoveLine();
         TestFull();
+       PlaySound(TEXT(R"(C:\Users\geniu\Desktop\sound_Asset\ping.wav)"), NULL, SND_FILENAME | SND_ASYNC); //충돌 사운드 관련 추가
         return TRUE;
     }
     // 아직 공중에 떠 있으면 한칸 아래로 내린다.
@@ -307,12 +339,13 @@ void TestFull()
         }
         // 한줄이 가득 찼으면 이 줄을 제거한다.
         if (bFull) {
+           score += 100;
             for (int ty = y; ty > 1; ty--) {
                 for (int x = 1; x < BW + 1; x++) {
                     board[x][ty] = board[x][ty - 1];
                 }
             }
-            score += 10; // 한 줄당 10점 증가
+            //score += 10; // 한 줄당 10점 증가
             if (score % 50 == 0) { //점수가 50점 당 한 번씩 레벨을 올림
                 level++;
                 DrawScreen();
