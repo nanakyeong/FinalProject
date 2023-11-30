@@ -15,7 +15,7 @@
    SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE),Cur);}
 #define showcursor(bShow) { CONSOLE_CURSOR_INFO CurInfo = {20, bShow}; \
    SetConsoleCursorInfo(GetStdHandle(STD_OUTPUT_HANDLE),&CurInfo); }
-#define putxyfn(x,y,format, value) {gotoxy(x,y);printf(format,value);}//추가(어떤 코드인지 설명부탁드립니다)
+#define putxyfn(x,y,format, value) {gotoxy(x,y);printf(format,value);}//추가
 
 enum { ESC = 27, LEFT = 75, RIGHT = 77, UP = 72, DOWN = 80 };
 #define putsxy(x, y, s) {gotoxy(x, y);puts(s);}
