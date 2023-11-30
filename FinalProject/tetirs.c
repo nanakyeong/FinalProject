@@ -63,18 +63,18 @@ int n_brick, n_rot;
 int score = 0;
 int level = 1;
 
-bool AskUserForMusic()
+BOOL AskUserForMusic()
 {
     putsxy(30, 10, "배경음악을 재생할까요? (Y/N)");
-    while (true) {
+    while (TRUE) {
         if (_kbhit()) {
             int ch = _getch();
             if (ch == 'Y' || ch == 'y') {
-                return true;
+                return TRUE;
 
             }
             else if (ch == 'N' || ch == 'n') {
-                return false;
+                return FALSE;
             }
         }
         delay(100);
