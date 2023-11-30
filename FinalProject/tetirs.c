@@ -116,7 +116,8 @@ int main()
 
     // 전체 게임 루프
     for (; 1;) {
-        gotoxy(50, 9); printf("LV : %d", level);
+        putxyfn(50, 9, "LV: %d", level);
+        //gotoxy(50, 9); printf("LV : %d", level);
         brick = random(sizeof(Shape) / sizeof(Shape[0])); //벽돌 하나 출력
         nx = BW / 2;
         ny = 3;
@@ -141,8 +142,8 @@ int main()
             delay(1000 / 20); // 벽돌이 조금씩 내려가도록 하기 위해
         }
 
-        if (score % 50 == 0) {
-            level++;
+        if (level*50<=score) {
+            //level++; //이 부분이 문제 인거 같은데.....
             DrawScreen();
             delay(100);
         }
@@ -165,7 +166,8 @@ int main()
     putsxy(30, 12, "G A M E  O V E R");
     PlaySound(TEXT(R"(C:\Users\geniu\Desktop\sound_Asset\negative_beeps.wav)"), NULL, SND_FILENAME); //종료 사운드 부분 추가
     PlaySound(NULL, NULL, 0);
-    gotoxy(50, 14); printf("LV : %d", level);
+    //gotoxy(50, 14); printf("LV : %d", level);
+    putxyfn(50, 14, "LV: %d", level);
     putxyfn(30, 15, "Best score: %d \n", score);
     showcursor(TRUE);
 }
@@ -351,7 +353,7 @@ void TestFull()
                 }
             }
             //score += 10; // 한 줄당 10점 증가
-            if (score % 50 == 0) { //점수가 50점 당 한 번씩 레벨을 올림
+            if (score % 50==0) { //점수가 50점 당 한 번씩 레벨을 올림 level*50 <= score
                 level++;
                 DrawScreen();
                 delay(100); // 레벨 업을 알리기 위한 딜레이
