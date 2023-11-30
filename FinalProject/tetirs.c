@@ -81,11 +81,11 @@ BOOL AskUserForMusic()
     }
 }
 
-void PlayBackgroundMusic()
-{
-    PlaySound(NULL, NULL, 0);
-    PlaySound(TEXT(R"(C:\Users\geniu\Desktop\sound_Asset\BGM.wav)"), NULL, SND_FILENAME | SND_ASYNC | SND_LOOP);
-}
+//void PlayBackgroundMusic()
+//{
+//    PlaySound(NULL, NULL, 0);
+//    PlaySound(TEXT(R"(C:\Users\geniu\Desktop\sound_Asset\BGM.wav)"), NULL, SND_FILENAME | SND_ASYNC | SND_LOOP);
+//}
 
 int main()
 {
@@ -158,8 +158,8 @@ int main()
     }
     clrscr();
     putsxy(30, 12, "G A M E  O V E R");
-    PlaySound(TEXT(R"(C:\Users\geniu\Desktop\sound_Asset\negative_beeps.wav)"), NULL, SND_FILENAME); //종료 사운드 부분 추가
-    PlaySound(NULL, NULL, 0);
+    //PlaySound(TEXT(R"(C:\Users\geniu\Desktop\sound_Asset\negative_beeps.wav)"), NULL, SND_FILENAME); //종료 사운드 부분 추가
+    //PlaySound(NULL, NULL, 0);
     gotoxy(50, 14); printf("LV : %d", level);
     putxyfn(50, 14, "LV: %d", level);
     putxyfn(30, 15, "Best score: %d \n", score);
@@ -312,7 +312,7 @@ BOOL MoveDown()
     if (GetAround(nx, ny + 1, brick, rot) != EMPTY) {
         RemoveLine();
         TestFull();
-        PlaySound(TEXT(R"(C:\Users\geniu\Desktop\sound_Asset\ping.wav)"), NULL, SND_FILENAME | SND_ASYNC); //충돌 사운드 관련 추가
+        //PlaySound(TEXT(R"(C:\Users\geniu\Desktop\sound_Asset\ping.wav)"), NULL, SND_FILENAME | SND_ASYNC); //충돌 사운드 관련 추가
         return TRUE;
     }
     // 아직 공중에 떠 있으면 한칸 아래로 내린다.
