@@ -92,9 +92,9 @@ int main()
 
     int nFrame, nStay;
     int x, y;
-    if (AskUserForMusic()) {
+    /*if (AskUserForMusic()) {
         PlayBackgroundMusic();
-    }
+    }*/
 
     showcursor(FALSE);
     randomize();
@@ -116,15 +116,14 @@ int main()
 
     // 전체 게임 루프
     for (; 1;) {
-        putxyfn(50, 9, "LV: %d", level);
-        //gotoxy(50, 9); printf("LV : %d", level);
+        gotoxy(50, 9); printf("LV : %d", level);
         brick = random(sizeof(Shape) / sizeof(Shape[0])); //벽돌 하나 출력
         nx = BW / 2;
         ny = 3;
         rot = 0;
         n_rot = 0;
         brick = n_brick;
-        n_brick = random(sizeof(Shape) / sizeof(Shape[0])); //벽돌 하나 출력
+        n_brick = rand() % (sizeof(Shape) / sizeof(Shape[0]));
         PrintBrick(TRUE);
         pre();
         next_brick(TRUE);
@@ -161,7 +160,6 @@ int main()
     //PlaySound(TEXT(R"(C:\Users\geniu\Desktop\sound_Asset\negative_beeps.wav)"), NULL, SND_FILENAME); //종료 사운드 부분 추가
     //PlaySound(NULL, NULL, 0);
     gotoxy(50, 14); printf("LV : %d", level);
-    putxyfn(50, 14, "LV: %d", level);
     putxyfn(30, 15, "Best score: %d \n", score);
     showcursor(TRUE);
 }
@@ -346,24 +344,20 @@ void TestFull()
                 }
             }
             score += 100;
-            if (score % 500 == 0) { //점수가 50점 당 한 번씩 레벨을 올림
-                //score += 10; // 한 줄당 10점 증가
-                if (score % 50 == 0) { //점수가 50점 당 한 번씩 레벨을 올림 level*50 <= score
-                    level++;
-                    DrawScreen();
-                    delay(100); // 레벨 업을 알리기 위한 딜레이
-                }
+            if (score % 500 == 0) { 
+                level++;
                 DrawScreen();
-                delay(200);
+                delay(100); // 레벨 업을 알리기 위한 딜레이
             }
-
-
+            DrawScreen();
+            delay(200);
         }
+
+
     }
 }
 
 void next_brick(BOOL Show) {
-
     int i;
     // 미리보기를 가림
     if (!Show) {
