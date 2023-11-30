@@ -15,7 +15,7 @@
    SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE),Cur);}
 #define showcursor(bShow) { CONSOLE_CURSOR_INFO CurInfo = {20, bShow}; \
    SetConsoleCursorInfo(GetStdHandle(STD_OUTPUT_HANDLE),&CurInfo); }
-#define putxyfn(x,y,format, value) {gotoxy(x,y);printf(format,value);}//추가
+#define putxyfn(x,y,format, value) {gotoxy(x,y);printf(format,value);}//추가(어떤 코드인지 설명부탁드립니다)
 
 enum { ESC = 27, LEFT = 75, RIGHT = 77, UP = 72, DOWN = 80 };
 #define putsxy(x, y, s) {gotoxy(x, y);puts(s);}
@@ -24,7 +24,6 @@ enum { ESC = 27, LEFT = 75, RIGHT = 77, UP = 72, DOWN = 80 };
 #define BY 1
 #define BW 10
 #define BH 20
-int score = 0; //추가
 
 void DrawScreen();
 BOOL ProcessKey();
@@ -44,6 +43,7 @@ void SwapBrick();
 struct Point {
     int x, y;
 };
+
 struct Point Shape[][4][4] = {
    { { 0,0,1,0,2,0,-1,0 },{ 0,0,0,1,0,-1,0,-2 },{ 0,0,1,0,2,0,-1,0 },{ 0,0,0,1,0,-1,0,-2 } },
    { { 0,0,1,0,0,1,1,1 },{ 0,0,1,0,0,1,1,1 },{ 0,0,1,0,0,1,1,1 },{ 0,0,1,0,0,1,1,1 } },
@@ -60,7 +60,7 @@ int board[BW + 2][BH + 2];
 int nx, ny;
 int brick, rot;
 int n_brick, n_rot;
-//int score = 0;
+int score = 0;
 int level = 1;
 
 BOOL AskUserForMusic()
@@ -123,7 +123,7 @@ int main()
         rot = 0;
         n_rot = 0;
         brick = n_brick;
-        n_brick = rand() % (sizeof(Shape) / sizeof(Shape[0]));
+        n_brick = random(sizeof(Shape) / sizeof(Shape[0])); //벽돌 하나 출력
         PrintBrick(TRUE);
         pre();
         next_brick(TRUE);
@@ -139,12 +139,6 @@ int main()
             }
             if (ProcessKey()) break;
             delay(1000 / 20); // 벽돌이 조금씩 내려가도록 하기 위해
-        }
-
-        if (score % 50 == 0) {
-            level++;
-            DrawScreen();
-            delay(100);
         }
 
         // 1부터 5까지의 랜덤한 아이템 선택
@@ -165,7 +159,6 @@ int main()
     putsxy(30, 12, "G A M E  O V E R");
     PlaySound(TEXT(R"(C:\Users\geniu\Desktop\sound_Asset\negative_beeps.wav)"), NULL, SND_FILENAME); //종료 사운드 부분 추가
     PlaySound(NULL, NULL, 0);
-    gotoxy(50, 14); printf("LV : %d", level);
     putxyfn(30, 15, "Best score: %d \n", score);
     showcursor(TRUE);
 }
@@ -344,14 +337,13 @@ void TestFull()
         }
         // 한줄이 가득 찼으면 이 줄을 제거한다.
         if (bFull) {
-            score += 100;
             for (int ty = y; ty > 1; ty--) {
                 for (int x = 1; x < BW + 1; x++) {
                     board[x][ty] = board[x][ty - 1];
                 }
             }
-            //score += 10; // 한 줄당 10점 증가
-            if (score % 50 == 0) { //점수가 50점 당 한 번씩 레벨을 올림
+            score += 100;
+            if (score % 500 == 0) { //점수가 50점 당 한 번씩 레벨을 올림
                 level++;
                 DrawScreen();
                 delay(100); // 레벨 업을 알리기 위한 딜레이
@@ -365,6 +357,7 @@ void TestFull()
 }
 
 void next_brick(BOOL Show) {
+
     int i;
     // 미리보기를 가림
     if (!Show) {
