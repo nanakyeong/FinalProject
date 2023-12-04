@@ -29,6 +29,7 @@ void DrawScreen(int board[BW + 2][BH + 2], int x, int y);
 //void DrawScreen();
 BOOL ProcessKey();
 void PrintBrick(BOOL Show);
+void PrintBrickOnBoard2(BOOL Show);
 int GetAround(int x, int y, int b, int r);
 BOOL MoveDown();
 BOOL TimeStop = FALSE; //시간 정지 상태
@@ -41,6 +42,7 @@ void StopItem();
 void UseStopItem();
 //void RemoveItem();
 BOOL showPreview = TRUE;
+int gameMode;
 
 struct Point {
     int x, y;
@@ -145,17 +147,19 @@ int main()
         DrawScreen(board2, 40, 0);
     }
 
-    // 가장자리는 벽, 나머지는 빈 공간으로 초기화한다.
     for (x = 0; x < BW + 2; x++) {
         for (y = 0; y < BH + 2; y++) {
             if (y == 0 || y == BH + 1 || x == 0 || x == BW + 1) {
                 board[x][y] = WALL;
+                board2[x][y] = WALL;  // board2에도 벽 초기화
             }
             else {
                 board[x][y] = EMPTY;
+                board2[x][y] = EMPTY;  // board2에도 빈 공간 초기화
             }
         }
     }
+
     DrawScreen(board, 0, 0);
     if (gameMode == 2) {
         DrawScreen(board2, 40, 0);
@@ -175,6 +179,10 @@ int main()
         PrintBrick(TRUE);
         pre();
         next_brick(TRUE);
+        if (gameMode == 2) {
+            PrintBrickOnBoard2(TRUE);
+            //next_brickOnBoard2(TRUE);
+        }
 
         if (GetAround(nx, ny, brick, rot) != EMPTY) break; // 빈칸이 없으면 끝
 
@@ -213,17 +221,20 @@ void DrawScreen(int board[BW + 2][BH + 2], int x, int y) {
         }
     }
 
-    putsxy(50, 3, "Tetris Ver 1.0");
+    //putsxy(50, 3, "Tetris Ver 1.0");
     putsxy(50, 5, "좌우:이동, 위:회전, 아래:내림");
     putsxy(50, 6, "공백:전부 내림");
     gotoxy(35, 12);
-    //printf("+(시간정지): %d", ItemCnt());
-    /*gotoxy(35, 13);
-    printf("-(한줄 지우기): %d", ItemCnt());
-    gotoxy(35, 14);
-    printf("/(미리보기 가리기): %d", ItemCnt());*/
     putxyfn(50, 8, "Score: %d", score);
 
+    if (board == board1) {
+        putsxy(50, 2, "Player 1");
+        putxyfn(50, 8, "Score: %d", score);
+    }
+    else if (board == board2) {
+        putsxy(110, 2, "Player 2");
+        putxyfn(110, 8, "Score: %d", score);
+    }
 }
 
 BOOL ProcessKey()
@@ -280,13 +291,23 @@ BOOL ProcessKey()
     return FALSE;
 }
 
+
 void PrintBrick(BOOL Show)
 {
     for (int i = 0; i < 4; i++) {
         gotoxy(BX + (Shape[brick][rot][i].x + nx) * 2, BY + Shape[brick][rot][i].y + ny);
         puts(arTile[Show ? BRICK : EMPTY]);
     }
+    
 }
+void PrintBrickOnBoard2(BOOL Show)
+{
+    for (int i = 0; i < 4; i++) {
+        gotoxy(BX + (Shape[brick][rot][i].x + nx) * 2 + 80, BY + Shape[brick][rot][i].y + ny);
+        puts(arTile[Show ? BRICK : EMPTY]);
+    }
+}
+
 
 int GetAround(int x, int y, int b, int r)
 {
@@ -310,6 +331,7 @@ BOOL MoveDown()
 
     // 아직 공중에 떠 있으면 한칸 아래로 내린다.
     PrintBrick(FALSE);
+    PrintBrickOnBoard2(FALSE);
     ny++;
     PrintBrick(TRUE);
     return FALSE;
