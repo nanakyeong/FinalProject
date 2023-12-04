@@ -25,7 +25,8 @@ enum { ESC = 27, LEFT = 75, RIGHT = 77, UP = 72, DOWN = 80 };
 #define BW 10
 #define BH 20
 
-void DrawScreen();
+void DrawScreen(int board[BW + 2][BH + 2], int x, int y);
+//void DrawScreen();
 BOOL ProcessKey();
 void PrintBrick(BOOL Show);
 int GetAround(int x, int y, int b, int r);
@@ -71,6 +72,9 @@ int brick, rot;
 int n_brick, n_rot;
 int score = 0;
 int level = 1;
+int board1[BW + 2][BH + 2];
+int board2[BW + 2][BH + 2];
+
 
 BOOL AskUserForMusic()
 {
@@ -90,24 +94,56 @@ BOOL AskUserForMusic()
     }
 }
 
-//void PlayBackgroundMusic()
-//{
-//    PlaySound(NULL, NULL, 0);
-//    PlaySound(TEXT(R"(C:\Users\geniu\Desktop\sound_Asset\BGM.wav)"), NULL, SND_FILENAME | SND_ASYNC | SND_LOOP);
-//}
+void PlayBackgroundMusic()
+{
+    PlaySound(NULL, NULL, 0);
+   PlaySound(TEXT(R"(C:\Users\Arthur\Desktop\sound_Asset\BGM.wav)"), NULL, SND_FILENAME | SND_ASYNC | SND_LOOP);
+}
 
 int main()
 {
 
     int nFrame, nStay;
     int x, y;
-    /*if (AskUserForMusic()) {
+    if (AskUserForMusic()) {
         PlayBackgroundMusic();
-    }*/
+    }
 
     showcursor(FALSE);
     randomize();
     clrscr();
+
+    gotoxy(30, 10); printf("게임모드를 설정해주세요 1 OR 2\n");
+    putsxy(30, 11, "1. 싱글플레이");
+    putsxy(30, 12, "2. 듀오플레이");
+    int gameMode = 0;
+    while (true)
+    {
+        if (_kbhit())
+        {
+            int ch = _getch();
+            if (ch == '1')
+            {
+                gameMode = 1;
+                clrscr();
+                break;
+            }
+            else if (ch == '2')
+            {
+                gameMode = 2;
+                clrscr();
+                break;
+            }
+        }
+        delay(100);
+    }
+    if (gameMode == 1) {
+        DrawScreen(board, 0, 0);
+    }
+    else {
+        DrawScreen(board1, 0, 0);
+        DrawScreen(board2, 40, 0);
+    }
 
     // 가장자리는 벽, 나머지는 빈 공간으로 초기화한다.
     for (x = 0; x < BW + 2; x++) {
@@ -120,11 +156,14 @@ int main()
             }
         }
     }
-    DrawScreen();
+    DrawScreen(board, 0, 0);
+    if (gameMode == 2) {
+        DrawScreen(board2, 40, 0);
+    }
     nFrame = 20;
 
     // 전체 게임 루프
-    for (; 1;) {
+    for (; ;) {
         gotoxy(50, 9); printf("LV : %d", level);
         brick = random(sizeof(Shape) / sizeof(Shape[0])); //벽돌 하나 출력
         nx = BW / 2;
@@ -149,12 +188,11 @@ int main()
             if (ProcessKey()) break;
             delay(1000 / 20); // 벽돌이 조금씩 내려가도록 하기 위해
         }
-
     }
     clrscr();
     putsxy(30, 12, "G A M E  O V E R");
-    //PlaySound(TEXT(R"(C:\Users\geniu\Desktop\sound_Asset\negative_beeps.wav)"), NULL, SND_FILENAME); //종료 사운드 부분 추가
-    //PlaySound(NULL, NULL, 0);
+    PlaySound(TEXT(R"(C:\Users\Arthur\Desktop\sound_Asset\negative_beeps.wav)"), NULL, SND_FILENAME); //종료 사운드 부분 추가
+    PlaySound(NULL, NULL, 0);
     putxyfn(30, 15, "Best score: %d \n", score);
     showcursor(TRUE);
 }
@@ -168,11 +206,10 @@ void ShowAndDropItem(int x, int y, int item)
     }
 }
 
-void DrawScreen()
-{
-    for (int x = 0; x < BW + 2; x++) {
-        for (int y = 0; y < BH + 2; y++) {
-            putsxy(BX + x * 2, BY + y, arTile[board[x][y]]);
+void DrawScreen(int board[BW + 2][BH + 2], int x, int y) {
+    for (int i = 0; i < BW + 2; i++) {
+        for (int j = 0; j < BH + 2; j++) {
+            putsxy(BX + x * 2 + i * 2, BY + y + j, arTile[board[i][j]]);
         }
     }
 
@@ -180,7 +217,7 @@ void DrawScreen()
     putsxy(50, 5, "좌우:이동, 위:회전, 아래:내림");
     putsxy(50, 6, "공백:전부 내림");
     gotoxy(35, 12);
-    printf("+(시간정지): %d", ItemCnt());
+    //printf("+(시간정지): %d", ItemCnt());
     /*gotoxy(35, 13);
     printf("-(한줄 지우기): %d", ItemCnt());
     gotoxy(35, 14);
@@ -222,7 +259,7 @@ BOOL ProcessKey()
                     return TRUE;
                 }
                 break;
-            
+
             }
 
         }
@@ -234,7 +271,7 @@ BOOL ProcessKey()
             case '+':
                 UseStopItem();
                 break;
-            
+
             case ESC:
                 exit(0);
             }
@@ -267,11 +304,11 @@ BOOL MoveDown()
     // 바닥에 닿았으면 가득찼는지 점검하고 TRUE를 리턴한다.
     if (GetAround(nx, ny + 1, brick, rot) != EMPTY) {
         TestFull();
-        //PlaySound(TEXT(R"(C:\Users\geniu\Desktop\sound_Asset\ping.wav)"), NULL, SND_FILENAME | SND_ASYNC); //충돌 사운드 관련 추가
+        PlaySound(TEXT(R"(C:\Users\Arthur\Desktop\sound_Asset\ping.wav)"), NULL, SND_FILENAME | SND_ASYNC); //충돌 사운드 관련 추가
         return TRUE;
     }
-    
-     // 아직 공중에 떠 있으면 한칸 아래로 내린다.
+
+    // 아직 공중에 떠 있으면 한칸 아래로 내린다.
     PrintBrick(FALSE);
     ny++;
     PrintBrick(TRUE);
@@ -305,7 +342,7 @@ void TestFull()
             if (score % 100 == 0) {
                 LevelUp();
             }
-            DrawScreen();
+            DrawScreen(board, 0, 0);
             delay(200);
         }
 
@@ -343,7 +380,7 @@ void AddItem(char item, int count) {
     if (newItem == NULL) {
         // 실패 시 처리
         fprintf(stderr, "메모리 할당에 실패했습니다.\n");
-    
+
     }
 
     // 메모리 초기화
@@ -360,7 +397,7 @@ void AddItem(char item, int count) {
 void LevelUp() {
 
     level++;
-    DrawScreen();
+    DrawScreen(board, 0, 0);
     delay(100);
 
     // 기존의 아이템 노드 모두 삭제
@@ -370,7 +407,7 @@ void LevelUp() {
         free(temp);
     }
 
-        AddItem('+', 1);
+    AddItem('+', 1);
 }
 
 void RemoveUsedItem(char item) {
@@ -407,7 +444,7 @@ void StopItem() {
         free(temp);
     }
 
-    ItemCnt();
+    //ItemCnt();
 }
 
 int ItemCnt() {
@@ -429,10 +466,10 @@ void UseStopItem() {
         return;
     }
     TimeStop = TRUE;
-    DrawScreen();
+    DrawScreen(board, 0, 0);
     delay(5000);
     TimeStop = FALSE;
     RemoveUsedItem('+');
-    DrawScreen();
+    DrawScreen(board, 0, 0);
     ItemCnt();
 }
