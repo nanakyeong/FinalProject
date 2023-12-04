@@ -34,11 +34,12 @@ BOOL TimeStop = FALSE; //시간 정지 상태
 void TestFull();
 void next_brick(BOOL Show);//다음 블록   
 void pre();//블록 미리보기
-void RandomItem(char item);//아이템 증정
-void BoardDelete();// @ 아이템의 블록 표현
-void ShowRemove();//블록 내려오기
-void RemoveLine();//라인 제거하고 블록 떨어뜨리기
-void SwapBrick();
+void AddItem();
+void LevelUp();
+void StopItem();
+void UseStopItem();
+//void RemoveItem();
+BOOL showPreview = TRUE;
 
 struct Point {
     int x, y;
@@ -53,6 +54,14 @@ struct Point Shape[][4][4] = {
    { { 0,0,1,0,-1,0,1,-1 },{ 0,0,0,1,0,-1,-1,-1 },{ 0,0,1,0,-1,0,-1,1 },{ 0,0,0,-1,0,1,1,1 } },
    { { 0,0,-1,0,1,0,0,1 },{ 0,0,0,-1,0,1,1,0 },{ 0,0,-1,0,1,0,0,-1 },{ 0,0,-1,0,0,-1,0,1 } },
 };
+
+typedef struct ItemNode {
+    char item;
+    int count;
+    struct ItemNode* next;
+} ItemNode;
+
+ItemNode* ItemHead = NULL;
 
 enum { EMPTY, BRICK, WALL, CLEAN };
 char arTile[3][4] = { ". ","■","□" };
@@ -141,35 +150,13 @@ int main()
             delay(1000 / 20); // 벽돌이 조금씩 내려가도록 하기 위해
         }
 
-        // 1부터 5까지의 랜덤한 아이템 선택
-        int randomItem = rand() % 5 + 1;
-        char itemCode;
-
-        switch (randomItem) {
-        case 1: itemCode = '+'; break;
-        case 2: itemCode = '@'; break;
-        case 3: itemCode = '-'; break;
-        case 4: itemCode = '*'; break;
-        case 5: itemCode = '/'; break;
-        default: itemCode = '+'; break; // 기본값으로 '+'
-        }
-
     }
     clrscr();
     putsxy(30, 12, "G A M E  O V E R");
     //PlaySound(TEXT(R"(C:\Users\geniu\Desktop\sound_Asset\negative_beeps.wav)"), NULL, SND_FILENAME); //종료 사운드 부분 추가
     //PlaySound(NULL, NULL, 0);
-    gotoxy(50, 14); printf("LV : %d", level);
     putxyfn(30, 15, "Best score: %d \n", score);
     showcursor(TRUE);
-}
-
-void BoardDelete(int x, int y, BOOL Show) {
-
-    for (int i = 0; i < 4; i++) {
-        gotoxy(BX + (x + Shape[0][0][i].x) * 2, BY + y + Shape[0][0][i].y);
-        puts(arTile[Show ? BRICK : CLEAN]);
-    }
 }
 
 void ShowAndDropItem(int x, int y, int item)
@@ -179,32 +166,6 @@ void ShowAndDropItem(int x, int y, int item)
         puts(arTile[BRICK]);
         delay(100);  // 블록이 떨어지는 속도를 조절하기 위한 딜레이
     }
-}
-
-void RemoveLine() {
-    // 블록을 특정 위치에서 시작하도록 설정 (여기서는 가운데에서 시작)
-    int startX = BW / 2;
-    int startY = 1;
-
-    // 블록을 표시하고 내리는 동작
-    ShowAndDropItem(startX, startY, n_brick);
-
-    // 블록이 특정 위치에 도달하면 해당 위치의 라인을 지우기
-    int targetLine = 5;  // 예시로 5번째 라인을 지움
-    if (startY >= targetLine) {
-        // 라인 지우기
-        for (int x = 1; x <= BW; x++) {
-            gotoxy(BX + x * 2, BY + targetLine);
-            puts(arTile[CLEAN]);
-        }
-    }
-}
-
-void SwapBrick(int brick, int n_brick) {
-    // 현재 블록과 다음 블록을 교체
-    int temp = brick;
-    brick = n_brick;
-    n_brick = temp;
 }
 
 void DrawScreen()
@@ -218,7 +179,14 @@ void DrawScreen()
     putsxy(50, 3, "Tetris Ver 1.0");
     putsxy(50, 5, "좌우:이동, 위:회전, 아래:내림");
     putsxy(50, 6, "공백:전부 내림");
-    putxyfn(50, 8, "Score: %d", score);//추가
+    gotoxy(35, 12);
+    printf("+(시간정지): %d", ItemCnt());
+    /*gotoxy(35, 13);
+    printf("-(한줄 지우기): %d", ItemCnt());
+    gotoxy(35, 14);
+    printf("/(미리보기 가리기): %d", ItemCnt());*/
+    putxyfn(50, 8, "Score: %d", score);
+
 }
 
 BOOL ProcessKey()
@@ -254,16 +222,7 @@ BOOL ProcessKey()
                     return TRUE;
                 }
                 break;
-            case '+':
-                if (GetAround(nx, ny, brick, rot) == EMPTY && !TimeStop) {
-                    PrintBrick(FALSE);
-                    nx--;
-                    PrintBrick(TRUE);
-                }
-                break;
-            case '@':
-                RandomItem('@');
-                break;
+            
             }
 
         }
@@ -272,6 +231,10 @@ BOOL ProcessKey()
             case ' ':
                 while (MoveDown() == FALSE) { ; }
                 return TRUE;
+            case '+':
+                UseStopItem();
+                break;
+            
             case ESC:
                 exit(0);
             }
@@ -303,12 +266,12 @@ BOOL MoveDown()
 {
     // 바닥에 닿았으면 가득찼는지 점검하고 TRUE를 리턴한다.
     if (GetAround(nx, ny + 1, brick, rot) != EMPTY) {
-        RemoveLine();
         TestFull();
         //PlaySound(TEXT(R"(C:\Users\geniu\Desktop\sound_Asset\ping.wav)"), NULL, SND_FILENAME | SND_ASYNC); //충돌 사운드 관련 추가
         return TRUE;
     }
-    // 아직 공중에 떠 있으면 한칸 아래로 내린다.
+    
+     // 아직 공중에 떠 있으면 한칸 아래로 내린다.
     PrintBrick(FALSE);
     ny++;
     PrintBrick(TRUE);
@@ -339,10 +302,8 @@ void TestFull()
                 }
             }
             score += 100;
-            if (score % 500 == 0) { 
-                level++;
-                DrawScreen();
-                delay(100); // 레벨 업을 알리기 위한 딜레이
+            if (score % 100 == 0) {
+                LevelUp();
             }
             DrawScreen();
             delay(200);
@@ -353,76 +314,125 @@ void TestFull()
 }
 
 void next_brick(BOOL Show) {
+
     int i;
-    // 미리보기를 가림
-    if (!Show) {
-        gotoxy(28, 3); puts("              ");
-        gotoxy(28, 4); puts("              ");
-        gotoxy(28, 5); puts("              ");
-        gotoxy(28, 6); puts("              ");
-        gotoxy(28, 7); puts("              ");
-        gotoxy(28, 8); puts("              ");
-        gotoxy(28, 9); puts("              ");
-        gotoxy(28, 10); puts("              ");
-        gotoxy(28, 11); puts("              ");
+    for (i = 0; i < 4; i++) {
+        gotoxy(28 + (Shape[n_brick][n_rot][i].x + nx) * 2, 3 + Shape[n_brick][n_rot][i].y + ny);
+        puts(arTile[Show ? BRICK : CLEAN]);
     }
-    else {
-        // 미리보기를 출력
-        for (i = 0; i < 4; i++) {
-            gotoxy(28 + (Shape[n_brick][n_rot][i].x + nx) * 2, 3 + Shape[n_brick][n_rot][i].y + ny);
-            puts(arTile[Show ? BRICK : CLEAN]);
-        }
-    }
+
 }
 
 void pre() {
-
-    gotoxy(35, 3); puts(" 다음블럭\n");
-    gotoxy(35, 4); puts("              \n");
-    gotoxy(35, 5); puts("              \n");
-    gotoxy(35, 6); puts("              \n");
-    gotoxy(35, 7); puts("              \n");
-    gotoxy(35, 8); puts("              \n");
-    gotoxy(35, 9); puts("              \n");
-    gotoxy(35, 10); puts("              \n");
-    gotoxy(35, 11); puts("              \n");
+    if (showPreview) {
+        gotoxy(35, 3); puts(" 다음 블록\n");
+        gotoxy(35, 4); puts("              \n");
+        gotoxy(35, 5); puts("              \n");
+        gotoxy(35, 6); puts("              \n");
+        gotoxy(35, 7); puts("              \n");
+        gotoxy(35, 8); puts("              \n");
+        gotoxy(35, 9); puts("              \n");
+        gotoxy(35, 10); puts("              \n");
+        gotoxy(35, 11); puts("              \n");
+    }
 }
 
-void RandomItem(char item) {
-
-    switch (item) {
-        // 시간 정지 기능 구현
-    case '+':
-        TimeStop = TRUE;
-        Sleep(5000); // 5초간 정지
-        TimeStop = FALSE;
-        break;
-    case '@':
-        // 3x3 블록 내려오는 동작 구현
-        for (int y = ny; y < ny + 3; y++) {
-            BoardDelete(nx, y - 1, FALSE);  // 이전 위치 지우기
-            BoardDelete(nx, y, TRUE);       // 새로운 위치에 표시
-            delay(500);                      // 0.5초 동안 대기
-        }
-
-        // 3x3 영역 블록 제거
-        for (int i = 0; i < 4; i++) {
-            board[nx + Shape[brick][rot][i].x - 1][ny + Shape[brick][rot][i].y - 1] = EMPTY;
-        }
-        break;
-    case '-':
-        RemoveLine();
-        break;
-    case '*':
-        SwapBrick(brick, n_brick);
-        PrintBrick(TRUE);
-        break;
-    case '/':
-        next_brick(FALSE);
-        PrintBrick(TRUE);
-        break;
-    default:
-        printf("존재하지 않는 아이템입니다.");
-        break;
+void AddItem(char item, int count) {
+    // 메모리 할당 시도
+    ItemNode* newItem = (ItemNode*)malloc(sizeof(ItemNode));
+    if (newItem == NULL) {
+        // 실패 시 처리
+        fprintf(stderr, "메모리 할당에 실패했습니다.\n");
+    
     }
+
+    // 메모리 초기화
+    newItem->item = item;
+    newItem->count = count;
+    newItem->next = NULL;  // 새 노드의 다음 노드는 초기에는 NULL로 설정합니다.
+
+    // 연결 리스트에 노드 추가
+    newItem->next = ItemHead;
+    ItemHead = newItem;
+}
+
+
+void LevelUp() {
+
+    level++;
+    DrawScreen();
+    delay(100);
+
+    // 기존의 아이템 노드 모두 삭제
+    while (ItemHead != NULL) {
+        ItemNode* temp = ItemHead;
+        ItemHead = ItemHead->next;
+        free(temp);
+    }
+
+        AddItem('+', 1);
+}
+
+void RemoveUsedItem(char item) {
+    ItemNode* current = ItemHead;
+    ItemNode* prev = NULL;
+
+    // 아이템 리스트를 순회하며 사용한 아이템 찾기
+    while (current != NULL) {
+        if (current->item == item) {
+            // 찾았을 경우 해당 아이템 노드를 삭제하고 메모리 해제
+            if (prev != NULL) {
+                prev->next = current->next;
+            }
+            else {
+                ItemHead = current->next;
+            }
+            free(current);
+            break;
+        }
+
+        // 다음 노드로 이동
+        prev = current;
+        current = current->next;
+    }
+}
+
+
+void StopItem() {
+
+    if (ItemHead != NULL && ItemHead->item == '+') {
+        TimeStop = TRUE;
+        ItemNode* temp = ItemHead;
+        ItemHead = ItemHead->next;
+        free(temp);
+    }
+
+    ItemCnt();
+}
+
+int ItemCnt() {
+
+    int itemcnt = 0;
+    ItemNode* current = ItemHead;
+
+    while (current != NULL) {
+        itemcnt += current->count;
+        current = current->next;
+    }
+
+    return itemcnt;
+}
+
+void UseStopItem() {
+    // 아이템이 아직 증정되지 않았으면 사용할 수 없음
+    if (ItemHead == NULL || ItemHead->item != '+') {
+        return;
+    }
+    TimeStop = TRUE;
+    DrawScreen();
+    delay(5000);
+    TimeStop = FALSE;
+    RemoveUsedItem('+');
+    DrawScreen();
+    ItemCnt();
 }
