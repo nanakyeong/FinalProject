@@ -18,6 +18,7 @@
 #define putxyfn(x,y,format, value) {gotoxy(x,y);printf(format,value);}//추가
 
 enum { ESC = 27, LEFT = 75, RIGHT = 77, UP = 72, DOWN = 80 };
+enum { w = 119, a = 97, s = 115, d = 100 };
 #define putsxy(x, y, s) {gotoxy(x, y);puts(s);}
 #define putxyfn(x,y,format, value) {gotoxy(x,y);printf(format,value);}//추가
 #define BX 5
@@ -28,6 +29,7 @@ enum { ESC = 27, LEFT = 75, RIGHT = 77, UP = 72, DOWN = 80 };
 void DrawScreen(int board[BW + 2][BH + 2], int x, int y);
 //void DrawScreen();
 BOOL ProcessKey();
+BOOL ProcessKeyForPL2();
 void PrintBrick(BOOL Show);
 void PrintBrickOnBoard2(BOOL Show);
 int GetAround(int x, int y, int b, int r);
@@ -42,6 +44,8 @@ void StopItem();
 void UseStopItem();
 //void RemoveItem();
 BOOL showPreview = TRUE;
+BOOL MoveDownOnBoard2();
+void TestFullOnBoard2();
 int gameMode;
 
 struct Point {
@@ -99,7 +103,7 @@ BOOL AskUserForMusic()
 void PlayBackgroundMusic()
 {
     PlaySound(NULL, NULL, 0);
-   PlaySound(TEXT(R"(C:\Users\Arthur\Desktop\sound_Asset\BGM.wav)"), NULL, SND_FILENAME | SND_ASYNC | SND_LOOP);
+    PlaySound(TEXT(R"(C:\Users\Arthur\Desktop\sound_Asset\BGM.wav)"), NULL, SND_FILENAME | SND_ASYNC | SND_LOOP);
 }
 
 int main()
@@ -167,6 +171,7 @@ int main()
     nFrame = 20;
 
     // 전체 게임 루프
+    //수정필요!!
     for (; ;) {
         gotoxy(50, 9); printf("LV : %d", level);
         brick = random(sizeof(Shape) / sizeof(Shape[0])); //벽돌 하나 출력
@@ -181,9 +186,8 @@ int main()
         next_brick(TRUE);
         if (gameMode == 2) {
             PrintBrickOnBoard2(TRUE);
-            //next_brickOnBoard2(TRUE);
         }
-
+        
         if (GetAround(nx, ny, brick, rot) != EMPTY) break; // 빈칸이 없으면 끝
 
         // 벽돌 하나가 바닥에 닿을 때까지의 루프
@@ -191,9 +195,19 @@ int main()
         for (; 2;) {
             if (--nStay == 0) {
                 nStay = nFrame;
-                if (MoveDown()) break;
+                if (MoveDown()) {
+                    if (gameMode == 2) {
+                        MoveDownOnBoard2();  // Call MoveDownOnBoard2 after MoveDown
+                    }
+                    break;
+                }
             }
-            if (ProcessKey()) break;
+            if (ProcessKey()) {
+                if (gameMode == 2) {
+                    MoveDownOnBoard2();  // Call MoveDownOnBoard2 after ProcessKey
+                }
+                break;
+            }
             delay(1000 / 20); // 벽돌이 조금씩 내려가도록 하기 위해
         }
     }
@@ -291,6 +305,74 @@ BOOL ProcessKey()
     return FALSE;
 }
 
+BOOL ProcessKeyForPL2()
+{
+    if (kbhit()) {
+        int ch = getch();
+        printf("Key pressed: %d\n", ch);
+        if (ch == 0xE0 || ch == 0) {
+            ch = getch();
+            switch (ch) {
+            case a:
+                if (GetAround(nx - 1, ny, brick, rot) == EMPTY) {
+                    PrintBrickOnBoard2(FALSE);
+                    nx--;
+                    PrintBrickOnBoard2(TRUE);
+                }
+                break;
+            case d:
+                if (GetAround(nx + 1, ny, brick, rot) == EMPTY) {
+                    PrintBrickOnBoard2(FALSE);
+                    nx++;
+                    PrintBrickOnBoard2(TRUE);
+                }
+                break;
+            case w:
+                if (GetAround(nx, ny, brick, (rot + 1) % 4) == EMPTY) {
+                    PrintBrick(FALSE);
+                    rot = (rot + 1) % 4;
+                    PrintBrickOnBoard2(TRUE);
+                }
+                break;
+            case s:
+                if (MoveDown()) {
+                    return TRUE;
+                }
+                break;
+            }
+        }
+        else {
+            switch (ch) {
+            case ' ':
+                while (MoveDown() == FALSE) { ; }
+                return TRUE;
+            case '+':
+                UseStopItem();
+                break;
+            case ESC:
+                exit(0);
+            }
+        }
+    }
+    return FALSE;
+}
+
+BOOL MoveDownOnBoard2()
+{
+    if (GetAround(nx, ny + 1, brick, rot) != EMPTY || GetAround(nx, ny + 1, brick, rot) != EMPTY) {
+
+        TestFullOnBoard2();
+        return TRUE;
+    }
+
+    PrintBrickOnBoard2(FALSE);
+    ny++;
+    PrintBrickOnBoard2(TRUE);
+
+    return FALSE;
+}
+
+
 
 void PrintBrick(BOOL Show)
 {
@@ -298,7 +380,7 @@ void PrintBrick(BOOL Show)
         gotoxy(BX + (Shape[brick][rot][i].x + nx) * 2, BY + Shape[brick][rot][i].y + ny);
         puts(arTile[Show ? BRICK : EMPTY]);
     }
-    
+
 }
 void PrintBrickOnBoard2(BOOL Show)
 {
@@ -322,18 +404,22 @@ int GetAround(int x, int y, int b, int r)
 
 BOOL MoveDown()
 {
-    // 바닥에 닿았으면 가득찼는지 점검하고 TRUE를 리턴한다.
-    if (GetAround(nx, ny + 1, brick, rot) != EMPTY) {
+    // 첫 번째 보드와 두 번째 보드 양쪽에서 충돌을 확인합니다.
+    if (GetAround(nx, ny + 1, brick, rot) != EMPTY || GetAround(nx, ny + 1, brick, rot) != EMPTY) {
+        // 게임이 종료되거나 충돌이 발생한 경우 처리를 수행합니다.
         TestFull();
-        PlaySound(TEXT(R"(C:\Users\Arthur\Desktop\sound_Asset\ping.wav)"), NULL, SND_FILENAME | SND_ASYNC); //충돌 사운드 관련 추가
+        PlaySound(TEXT(R"(C:\Users\Arthur\Desktop\sound_Asset\ping.wav)"), NULL, SND_FILENAME | SND_ASYNC);
         return TRUE;
     }
 
-    // 아직 공중에 떠 있으면 한칸 아래로 내린다.
+    // 첫 번째 보드와 두 번째 보드 양쪽에 벽돌을 출력합니다.
     PrintBrick(FALSE);
     PrintBrickOnBoard2(FALSE);
     ny++;
+
     PrintBrick(TRUE);
+    PrintBrickOnBoard2(TRUE);
+
     return FALSE;
 }
 
@@ -369,6 +455,39 @@ void TestFull()
         }
 
 
+    }
+}
+
+void TestFullOnBoard2()
+{
+    // 바닥에 내려앉은 벽돌 기록
+    for (int i = 0; i < 4; i++) {
+        board2[nx + Shape[brick][rot][i].x][ny + Shape[brick][rot][i].y] = BRICK;
+    }
+
+    // 수평으로 가득찬 벽돌 제거
+    for (int y = 1; y < BH + 1; y++) {
+        BOOL bFull = TRUE;
+        for (int x = 1; x < BW + 1; x++) {
+            if (board2[x][y] == EMPTY) {
+                bFull = FALSE;
+                break;
+            }
+        }
+        // 한줄이 가득 찼으면 이 줄을 제거한다.
+        if (bFull) {
+            for (int ty = y; ty > 1; ty--) {
+                for (int x = 1; x < BW + 1; x++) {
+                    board2[x][ty] = board2[x][ty - 1];
+                }
+            }
+            score += 100;
+            if (score % 100 == 0) {
+                LevelUp();
+            }
+            DrawScreen(board2, 40, 0);
+            delay(200);
+        }
     }
 }
 
