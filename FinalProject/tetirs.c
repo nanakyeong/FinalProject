@@ -40,10 +40,11 @@ void next_brick(BOOL Show);//다음 블록
 void pre();//블록 미리보기
 void AddItem();
 void LevelUp();
-void StopItem();
-void UseStopItem();
-//void RemoveItem();
-BOOL showPreview = TRUE;
+void NonItem();
+void RemoveTopLine();
+void BombItem();
+void DrawBomb();
+
 
 struct Point {
     int x, y;
@@ -232,15 +233,18 @@ void DrawScreen(int board[BW + 2][BH + 2], int x, int y) {
         }
     }
 
-    //putsxy(50, 3, "Tetris Ver 1.0");
+    putsxy(50, 3, "Tetris Ver 1.0");
     putsxy(50, 5, "좌우:이동, 위:회전, 아래:내림");
     putsxy(50, 6, "공백:전부 내림");
     gotoxy(35, 12);
     printf("+(시간정지): %d", ItemCnt());
-    /*gotoxy(35, 13);
+    gotoxy(35, 13);
     printf("-(한줄 지우기): %d", ItemCnt());
     gotoxy(35, 14);
-    printf("/(미리보기 가리기): %d", ItemCnt());*/
+    gotoxy(30, 14);
+    printf("/(블록 가리기): %d", ItemCnt());
+    gotoxy(30, 15);
+    printf("*(폭탄): %d", ItemCnt());
     putxyfn(50, 8, "Score: %d", score);
 
     if (board == board1) {
@@ -301,7 +305,12 @@ BOOL ProcessKey()
             case '+':
                 NonItem();
                 break;
-            
+            case '-':
+                RemoveTopLine();
+                break;
+            case '*':
+                BombItem();
+                break;
             case ESC:
                 exit(0);
             }
