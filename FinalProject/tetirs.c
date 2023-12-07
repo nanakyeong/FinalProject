@@ -44,7 +44,7 @@ void NonItem();
 void RemoveTopLine();
 void BombItem();
 void DrawBomb();
-
+void DrawScreen();
 
 struct Point {
     int x, y;
@@ -98,11 +98,11 @@ BOOL AskUserForMusic()
     }
 }
 
-void PlayBackgroundMusic()
-{
-    PlaySound(NULL, NULL, 0);
-    PlaySound(TEXT(R"(C:\Users\Arthur\Desktop\sound_Asset\BGM.wav)"), NULL, SND_FILENAME | SND_ASYNC | SND_LOOP);
-}
+//void PlayBackgroundMusic()
+//{
+//    PlaySound(NULL, NULL, 0);
+//    PlaySound(TEXT(R"(C:\Users\Arthur\Desktop\sound_Asset\BGM.wav)"), NULL, SND_FILENAME | SND_ASYNC | SND_LOOP);
+//}
 
 int main()
 {
@@ -121,7 +121,7 @@ int main()
     putsxy(30, 11, "1. 싱글플레이");
     putsxy(30, 12, "2. 듀오플레이");
     int gameMode = 0;
-    while (true)
+    while (TRUE)
     {
         if (_kbhit())
         {
@@ -211,8 +211,8 @@ int main()
     }
     clrscr();
     putsxy(30, 12, "G A M E  O V E R");
-    PlaySound(TEXT(R"(C:\Users\Arthur\Desktop\sound_Asset\negative_beeps.wav)"), NULL, SND_FILENAME); //종료 사운드 부분 추가
-    PlaySound(NULL, NULL, 0);
+    //PlaySound(TEXT(R"(C:\Users\Arthur\Desktop\sound_Asset\negative_beeps.wav)"), NULL, SND_FILENAME); //종료 사운드 부분 추가
+    //PlaySound(NULL, NULL, 0);
     putxyfn(30, 15, "Best score: %d \n", score);
     showcursor(TRUE);
 }
@@ -334,8 +334,6 @@ BOOL MoveDownOnBoard2()
     return FALSE;
 }
 
-
-
 void PrintBrick(BOOL Show)
 {
     for (int i = 0; i < 4; i++) {
@@ -369,7 +367,7 @@ BOOL MoveDown()
     if (GetAround(nx, ny + 1, brick, rot) != EMPTY || GetAround(nx, ny + 1, brick, rot) != EMPTY) {
         // 게임이 종료되거나 충돌이 발생한 경우 처리를 수행합니다.
         TestFull();
-        PlaySound(TEXT(R"(C:\Users\Arthur\Desktop\sound_Asset\ping.wav)"), NULL, SND_FILENAME | SND_ASYNC);
+       // PlaySound(TEXT(R"(C:\Users\Arthur\Desktop\sound_Asset\ping.wav)"), NULL, SND_FILENAME | SND_ASYNC);
         return TRUE;
     }
     
@@ -483,7 +481,7 @@ void AddItem(char item, int count) {
     ItemNode* newItem = (ItemNode*)malloc(sizeof(ItemNode));
     if (newItem == NULL) {
         fprintf(stderr, "메모리 할당에 실패했습니다.\n");
-    
+        return;
     }
 
     newItem->item = item;
@@ -506,12 +504,25 @@ void AddItem(char item, int count) {
 void LevelUp() {
 
     level++;
-    DrawScreen(board, 0, 0);
+    DrawScreen(board,0,0);
     delay(100);
 
     int RandomItem = rand() % 4;
 
+    switch (RandomItem) {
+    case 0:
         AddItem('+', 1);
+        break;
+    case 1:
+        AddItem('/', 1);
+        break;
+    case 2:
+        AddItem('-', 1);
+        break;
+    case 3:
+        AddItem('*', 1);
+        break;
+    }
 }
 
 void RemoveUsedItem(char item) {
@@ -548,7 +559,7 @@ void StopItem() {
         free(temp);
     }
 
-    //ItemCnt();
+    ItemCnt();
 }
 
 int ItemCnt() {
@@ -569,12 +580,20 @@ void NonItem() {
     if (ItemHead == NULL || (ItemHead->item != '+' && ItemHead->item != '/')) {
         return;
     }
-    TimeStop = TRUE;
-    DrawScreen();
-    delay(5000);
-    TimeStop = FALSE;
-    RemoveUsedItem('+');
-    DrawScreen();
+    if (ItemHead->item == '+') {
+        TimeStop = TRUE;
+        DrawScreen(board, 0, 0);
+        delay(5000);
+        TimeStop = FALSE;
+        RemoveUsedItem('+');
+    }
+    else if (ItemHead->item == '/') {
+        pre(FALSE);
+        delay(5000);
+        pre(TRUE);
+        RemoveUsedItem('/');
+    }
+    DrawScreen(board, 0, 0);
     ItemCnt();
 }
 
@@ -601,7 +620,7 @@ void RemoveTopLine() {
     RemoveUsedItem('-');
 
     // 화면을 다시 그립니다.
-    DrawScreen();
+    DrawScreen(board, 0, 0);
 }
 
 void BombItem() {
@@ -629,7 +648,7 @@ void BombItem() {
     RemoveUsedItem('*');
 
     // 화면을 다시 그림
-    DrawScreen();
+    DrawScreen(board, 0, 0);
 
     // 새로운 블록을 놓음
     nx = BW / 2;
@@ -637,7 +656,7 @@ void BombItem() {
     rot = 0;
     next_brick(TRUE);
 
-    // 이어서 게임 루프를 진행하거나 다른 처리를 수행
+    
 }
 
 void DrawBomb(int x, int y) {
