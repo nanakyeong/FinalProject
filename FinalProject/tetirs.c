@@ -43,7 +43,6 @@ void NonItem();
 void RemoveTopLine();
 void BombItem();
 void DrawBomb();
-void NextBlock();
 
 struct Point {
     int x, y;
@@ -228,7 +227,7 @@ BOOL ProcessKey()
                     return TRUE;
                 }
                 break;
-            
+
             }
 
         }
@@ -246,9 +245,9 @@ BOOL ProcessKey()
             case '-':
                 RemoveTopLine();
                 break;
-            case '*':
-                BombItem();
-                break;
+                /*case '*':
+                    BombItem();
+                    break;*/
             case ESC:
                 exit(0);
             }
@@ -294,8 +293,8 @@ BOOL MoveDown()
         //PlaySound(TEXT(R"(C:\Users\geniu\Desktop\sound_Asset\ping.wav)"), NULL, SND_FILENAME | SND_ASYNC); //충돌 사운드 관련 추가
         return TRUE;
     }
-    
-     // 아직 공중에 떠 있으면 한칸 아래로 내린다.
+
+    // 아직 공중에 떠 있으면 한칸 아래로 내린다.
     PrintBrick(FALSE);
     ny++;
     PrintBrick(TRUE);
@@ -485,10 +484,10 @@ void NonItem() {
 }
 
 void RemoveTopLine() {
-    // 만약 현재 아이템이 '-'가 아니거나, 아이템이 아직 증정되지 않았다면 함수 실행을 중단합니다.
-    if (ItemHead == NULL || ItemHead->item != '-') {
-        return;
-    }
+    //// 만약 현재 아이템이 '-'가 아니거나, 아이템이 아직 증정되지 않았다면 함수 실행을 중단합니다.
+    //if (ItemHead == NULL || ItemHead->item != '-') {
+    //    return;
+    //}
 
     // 보드에서 가장 아래에 있는 줄을 삭제합니다.
     for (int y = BH; y > 0; y--) {
@@ -511,11 +510,6 @@ void RemoveTopLine() {
 }
 
 void BombItem() {
-    // 아이템이 아직 증정되지 않았으면 사용할 수 없음
-    if (ItemHead == NULL || (ItemHead->item != '+' && ItemHead->item != '/')) {
-        return;
-    }
-
     int bombRange = 1;
 
     // 폭발 범위 내의 블록을 제거
@@ -542,6 +536,7 @@ void BombItem() {
     // 화면을 다시 그림
     DrawScreen();
 
+    // 새로운 블록을 놓음
     nx = BW / 2;
     ny = 3;
     rot = 0;
@@ -551,7 +546,7 @@ void BombItem() {
 }
 
 void DrawBomb(int x, int y) {
-    // 화면에는 폭탄 흔적을 표시
+    // 폭탄 모양 출력
     putsxy(BX + x * 2, BY + y, "╔═╗");
     putsxy(BX + x * 2, BY + y + 1, "║*║");
     putsxy(BX + x * 2, BY + y + 2, "╚═╝");
@@ -561,6 +556,3 @@ void DrawBomb(int x, int y) {
     board[x][y + 1] = EMPTY;
     board[x][y + 2] = EMPTY;
 }
-
-
-
