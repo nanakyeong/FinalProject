@@ -11,6 +11,7 @@
 #define random(n) (rand() % (n))
 #define delay(n) Sleep(n)
 #define clrscr() system("cls")
+#define BOMB '*'
 #define gotoxy(x,y) { COORD Cur = {x, y}; \
    SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE),Cur);}
 #define showcursor(bShow) { CONSOLE_CURSOR_INFO CurInfo = {20, bShow}; \
@@ -25,6 +26,7 @@ enum { ESC = 27, LEFT = 75, RIGHT = 77, UP = 72, DOWN = 80 };
 #define BW 10
 #define BH 20
 
+
 void DrawScreen();
 BOOL ProcessKey();
 void PrintBrick(BOOL Show);
@@ -37,9 +39,11 @@ void pre();//블록 미리보기
 void AddItem();
 void LevelUp();
 void StopItem();
-void UseStopItem();
-//void RemoveItem();
-BOOL showPreview = TRUE;
+void NonItem();
+void RemoveTopLine();
+void BombItem();
+void DrawBomb();
+void NextBlock();
 
 struct Point {
     int x, y;
@@ -179,12 +183,14 @@ void DrawScreen()
     putsxy(50, 3, "Tetris Ver 1.0");
     putsxy(50, 5, "좌우:이동, 위:회전, 아래:내림");
     putsxy(50, 6, "공백:전부 내림");
-    gotoxy(35, 12);
+    gotoxy(30, 12);
     printf("+(시간정지): %d", ItemCnt());
-    /*gotoxy(35, 13);
+    gotoxy(30, 13);
     printf("-(한줄 지우기): %d", ItemCnt());
-    gotoxy(35, 14);
-    printf("/(미리보기 가리기): %d", ItemCnt());*/
+    gotoxy(30, 14);
+    printf("/(블록 가리기): %d", ItemCnt());
+    gotoxy(30, 15);
+    printf("*(폭탄): %d", ItemCnt());
     putxyfn(50, 8, "Score: %d", score);
 
 }
@@ -228,13 +234,21 @@ BOOL ProcessKey()
         }
         else {
             switch (ch) {
+            case '/':
+                NonItem();
+                break;
             case ' ':
                 while (MoveDown() == FALSE) { ; }
                 return TRUE;
             case '+':
-                UseStopItem();
+                NonItem();
                 break;
-            
+            case '-':
+                RemoveTopLine();
+                break;
+            case '*':
+                BombItem();
+                break;
             case ESC:
                 exit(0);
             }
@@ -249,6 +263,16 @@ void PrintBrick(BOOL Show)
         gotoxy(BX + (Shape[brick][rot][i].x + nx) * 2, BY + Shape[brick][rot][i].y + ny);
         puts(arTile[Show ? BRICK : EMPTY]);
     }
+}
+
+void next_brick(BOOL Show) {
+    int i;
+
+    for (i = 0; i < 4; i++) {
+        gotoxy(28 + (Shape[n_brick][n_rot][i].x + nx) * 2, 3 + Shape[n_brick][n_rot][i].y + ny);
+        puts(arTile[Show ? BRICK : CLEAN]);
+    }
+
 }
 
 int GetAround(int x, int y, int b, int r)
@@ -313,49 +337,56 @@ void TestFull()
     }
 }
 
-void next_brick(BOOL Show) {
-
-    int i;
-    for (i = 0; i < 4; i++) {
-        gotoxy(28 + (Shape[n_brick][n_rot][i].x + nx) * 2, 3 + Shape[n_brick][n_rot][i].y + ny);
-        puts(arTile[Show ? BRICK : CLEAN]);
-    }
-
-}
-
 void pre() {
-    if (showPreview) {
-        gotoxy(35, 3); puts(" 다음 블록\n");
-        gotoxy(35, 4); puts("              \n");
-        gotoxy(35, 5); puts("              \n");
-        gotoxy(35, 6); puts("              \n");
-        gotoxy(35, 7); puts("              \n");
-        gotoxy(35, 8); puts("              \n");
-        gotoxy(35, 9); puts("              \n");
-        gotoxy(35, 10); puts("              \n");
-        gotoxy(35, 11); puts("              \n");
-    }
+
+    gotoxy(35, 3); puts("다음블록\n");
+    gotoxy(35, 4); puts("              \n");
+    gotoxy(35, 5); puts("              \n");
+    gotoxy(35, 6); puts("              \n");
+    gotoxy(35, 7); puts("              \n");
+    gotoxy(35, 8); puts("              \n");
+    gotoxy(35, 9); puts("              \n");
+    gotoxy(35, 10); puts("              \n");
+    gotoxy(35, 11); puts("              \n");
+
 }
+
 
 void AddItem(char item, int count) {
-    // 메모리 할당 시도
-    ItemNode* newItem = (ItemNode*)malloc(sizeof(ItemNode));
-    if (newItem == NULL) {
-        // 실패 시 처리
-        fprintf(stderr, "메모리 할당에 실패했습니다.\n");
-    
+    // 기존 아이템 확인
+    ItemNode* current = ItemHead;
+    while (current != NULL) {
+        if (current->item == item) {
+            // 이미 추가된 아이템이면 count만 증가시키고 종료
+            current->count += count;
+            return;
+        }
+        current = current->next;
     }
 
-    // 메모리 초기화
+    // 새로운 아이템 추가
+    ItemNode* newItem = (ItemNode*)malloc(sizeof(ItemNode));
+    if (newItem == NULL) {
+        fprintf(stderr, "메모리 할당에 실패했습니다.\n");
+        return;
+    }
+
     newItem->item = item;
     newItem->count = count;
-    newItem->next = NULL;  // 새 노드의 다음 노드는 초기에는 NULL로 설정합니다.
+    newItem->next = NULL;  // 새로운 노드의 다음 노드는 초기에는 NULL로 설정합니다.
 
     // 연결 리스트에 노드 추가
-    newItem->next = ItemHead;
-    ItemHead = newItem;
+    if (ItemHead == NULL) {
+        ItemHead = newItem;
+    }
+    else {
+        current = ItemHead;
+        while (current->next != NULL) {
+            current = current->next;
+        }
+        current->next = newItem;
+    }
 }
-
 
 void LevelUp() {
 
@@ -363,17 +394,26 @@ void LevelUp() {
     DrawScreen();
     delay(100);
 
-    // 기존의 아이템 노드 모두 삭제
-    while (ItemHead != NULL) {
-        ItemNode* temp = ItemHead;
-        ItemHead = ItemHead->next;
-        free(temp);
-    }
+    int RandomItem = rand() % 4;
 
+    switch (RandomItem) {
+    case 0:
         AddItem('+', 1);
+        break;
+    case 1:
+        AddItem('/', 1);
+        break;
+    case 2:
+        AddItem('-', 1);
+        break;
+    case 3:
+        AddItem('*', 1);
+        break;
+    }
 }
 
 void RemoveUsedItem(char item) {
+
     ItemNode* current = ItemHead;
     ItemNode* prev = NULL;
 
@@ -396,7 +436,6 @@ void RemoveUsedItem(char item) {
         current = current->next;
     }
 }
-
 
 void StopItem() {
 
@@ -423,16 +462,105 @@ int ItemCnt() {
     return itemcnt;
 }
 
-void UseStopItem() {
+void NonItem() {
     // 아이템이 아직 증정되지 않았으면 사용할 수 없음
-    if (ItemHead == NULL || ItemHead->item != '+') {
+    if (ItemHead == NULL || (ItemHead->item != '+' && ItemHead->item != '/')) {
         return;
     }
-    TimeStop = TRUE;
-    DrawScreen();
-    delay(5000);
-    TimeStop = FALSE;
-    RemoveUsedItem('+');
+    if (ItemHead->item == '+') {
+        TimeStop = TRUE;
+        DrawScreen();
+        delay(5000);
+        TimeStop = FALSE;
+        RemoveUsedItem('+');
+    }
+    else if (ItemHead->item == '/') {
+        pre(FALSE);
+        delay(5000);
+        pre(TRUE);
+        RemoveUsedItem('/');
+    }
     DrawScreen();
     ItemCnt();
 }
+
+void RemoveTopLine() {
+    // 만약 현재 아이템이 '-'가 아니거나, 아이템이 아직 증정되지 않았다면 함수 실행을 중단합니다.
+    if (ItemHead == NULL || ItemHead->item != '-') {
+        return;
+    }
+
+    // 보드에서 가장 아래에 있는 줄을 삭제합니다.
+    for (int y = BH; y > 0; y--) {
+        for (int x = 1; x < BW + 1; x++) {
+            // 각 칸을 한 칸씩 아래로 이동시킵니다.
+            board[x][y] = board[x][y - 1];
+        }
+    }
+
+    // 보드의 맨 위에 빈 줄을 추가합니다.
+    for (int x = 1; x < BW + 1; x++) {
+        board[x][1] = EMPTY;
+    }
+
+    // 사용된 아이템을 제거합니다.
+    RemoveUsedItem('-');
+
+    // 화면을 다시 그립니다.
+    DrawScreen();
+}
+
+void BombItem() {
+    // 아이템이 아직 증정되지 않았으면 사용할 수 없음
+    if (ItemHead == NULL || (ItemHead->item != '+' && ItemHead->item != '/')) {
+        return;
+    }
+
+    int bombRange = 1;
+
+    // 폭발 범위 내의 블록을 제거
+    for (int i = -bombRange; i <= bombRange; i++) {
+        for (int j = -bombRange; j <= bombRange; j++) {
+            int targetX = nx + i;
+            int targetY = ny + j;
+
+            // 범위를 벗어나지 않도록 체크
+            if (targetX >= 1 && targetX <= BW && targetY >= 1 && targetY <= BH) {
+                // 폭탄 모양 출력
+                DrawBomb(targetX, targetY);
+                // 일정 시간 동안 딜레이
+                delay(100);
+                // 폭탄이 터진 위치를 다시 보드로 설정
+                board[targetX][targetY] = EMPTY;
+            }
+        }
+    }
+
+    // 사용된 아이템을 제거
+    RemoveUsedItem('*');
+
+    // 화면을 다시 그림
+    DrawScreen();
+
+    nx = BW / 2;
+    ny = 3;
+    rot = 0;
+    next_brick(TRUE);
+
+    // 이어서 게임 루프를 진행하거나 다른 처리를 수행
+}
+
+void DrawBomb(int x, int y) {
+    // 화면에는 폭탄 흔적을 표시
+    putsxy(BX + x * 2, BY + y, "╔═╗");
+    putsxy(BX + x * 2, BY + y + 1, "║*║");
+    putsxy(BX + x * 2, BY + y + 2, "╚═╝");
+
+    // 게임 보드에서 해당 위치를 EMPTY로 설정
+    board[x][y] = EMPTY;
+    board[x][y + 1] = EMPTY;
+    board[x][y + 2] = EMPTY;
+}
+
+
+
