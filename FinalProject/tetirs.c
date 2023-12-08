@@ -606,7 +606,7 @@ void AddItem(char item, int count) { // 새로운 아이템을 아이템 리스�
 void LevelUp() {
 
     level++;
-    DrawScreen();
+    DrawScreen(board,0,0);
     delay(100);
 
     char randomItem;
@@ -697,7 +697,7 @@ void StopItem() {
     if (plusItemCnt > 0) {
         TimeStop = TRUE;
         RemoveUsedItem('+');
-        DrawScreen();
+        DrawScreen(board, 0, 0);
         delay(5000);
         TimeStop = FALSE;
     }
@@ -735,7 +735,7 @@ void RemoveTopLine() {
             board[x][1] = EMPTY;
         }
         RemoveUsedItem('-');
-        DrawScreen();
+        DrawScreen(board, 0, 0);
     }
 }
 
@@ -766,7 +766,7 @@ void BombItem() {
             }
         }
         RemoveUsedItem('*');
-        DrawScreen();
+        DrawScreen(board, 0, 0);
 
         nx = BW / 2;
         ny = 3;
