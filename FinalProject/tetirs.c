@@ -321,7 +321,7 @@ BOOL ProcessKey()
     return FALSE;
 }
 
-BOOL ProcessKeyForPL2()
+BOOL ProcessKeyForPL2() //멘토님
 {
     if (kbhit()) {
         int ch2 = getch();
@@ -396,7 +396,6 @@ BOOL MoveDownOnBoard2()
 
     return FALSE;
 }
-
 
 
 void PrintBrick(BOOL Show)
@@ -556,57 +555,131 @@ void pre() {
     }
 }
 
-void AddItem(char item, int count) {
-    // 메모리 할당 시도
-    ItemNode* newItem = (ItemNode*)malloc(sizeof(ItemNode));
-    if (newItem == NULL) {
-        // 실패 시 처리
-        fprintf(stderr, "메모리 할당에 실패했습니다.\n");
-
+void AddItem(char item, int count) { // 새로운 아이템을 아이템 리스트에 추가하는 함수
+    // 음수 또는 0 이하의 아이템 개수는 처리하지 않음
+    if (count <= 0) {
+        fprintf(stderr, "유효하지 않은 아이템 개수입니다.\n");
+        return;
     }
 
-    // 메모리 초기화
+    // 현재 아이템 리스트의 시작 노드를 가리키는 포인터
+    ItemNode* current = ItemHead;
+
+    // 아이템 리스트를 순회하면서 이미 추가된 아이템인지 확인
+    while (current != NULL) {
+        // 이미 추가된 아이템이면 개수만 증가시키고 함수 종료
+        if (current->item == item) {
+            current->count += count;
+            return;
+        }
+        current = current->next; // 다음 노드로 이동
+    }
+
+    // 새로운 아이템을 저장할 노드 동적 할당
+    ItemNode* newItem = (ItemNode*)malloc(sizeof(ItemNode));
+    if (newItem == NULL) {
+        // 메모리 할당 실패 시 에러 메시지 출력 후 함수 종료
+        fprintf(stderr, "메모리 할당에 실패했습니다.\n");
+        return;
+    }
+
+    // 새로운 아이템 정보 설정
     newItem->item = item;
     newItem->count = count;
-    newItem->next = NULL;  // 새 노드의 다음 노드는 초기에는 NULL로 설정합니다.
+    newItem->next = NULL;
 
     // 연결 리스트에 노드 추가
-    newItem->next = ItemHead;
-    ItemHead = newItem;
+    if (ItemHead == NULL) {
+        // 리스트가 비어있으면 새로운 노드를 리스트의 첫 번째 노드로 설정
+        ItemHead = newItem;
+    }
+    else {
+        // 리스트가 비어있지 않으면 끝까지 순회하여 마지막 노드 뒤에 새로운 노드 추가
+        current = ItemHead;
+        while (current->next != NULL) {
+            current = current->next;
+        }
+        current->next = newItem;
+    }
 }
-
 
 void LevelUp() {
 
     level++;
-    DrawScreen(board, 0, 0);
+    DrawScreen();
     delay(100);
 
-    // 기존의 아이템 노드 모두 삭제
-    while (ItemHead != NULL) {
-        ItemNode* temp = ItemHead;
-        ItemHead = ItemHead->next;
-        free(temp);
+    char randomItem;
+    int RandomItemIndex = rand() % 4;
+
+    switch (RandomItemIndex) {
+    case 0:
+        randomItem = '+';
+        break;
+    case 1:
+        randomItem = '/';
+        break;
+    case 2:
+        randomItem = '-';
+        break;
+    case 3:
+        randomItem = '*';
+        break;
     }
 
-    AddItem('+', 1);
+    // 선택된 아이템을 추가
+    AddItem(randomItem, 1);
 }
 
-void RemoveUsedItem(char item) {
+
+int ItemCnt(char targetItem) { // 현재 보유한 아이템의 총 개수를 반환하는 함수
+    int itemcnt = 0;
+
+    // 현재 아이템 리스트의 시작 노드를 가리키는 포인터
     ItemNode* current = ItemHead;
+    while (current != NULL) {
+        // 현재 노드가 NULL이 아닐 때까지 반복
+        if (current->item == targetItem || targetItem == '\0') {
+            // 현재 노드의 아이템 개수를 전체 아이템 개수에 더함
+            itemcnt += current->count;
+
+
+        }
+
+        // 다음 노드로 이동
+        current = current->next;
+    }
+
+    // 계산된 전체 아이템 개수 반환
+    return itemcnt;
+}
+
+
+void RemoveUsedItem(char item) { // 사용된 아이템을 아이템 리스트에서 제거하는 함수 
+    // 현재 아이템 리스트의 시작 노드를 가리키는 포인터
+    ItemNode* current = ItemHead;
+    // 현재 노드의 이전 노드를 가리키는 포인터
     ItemNode* prev = NULL;
 
-    // 아이템 리스트를 순회하며 사용한 아이템 찾기
+    // 아이템 리스트를 순회하면서 사용한 아이템 찾기
     while (current != NULL) {
+        // 찾았을 경우 해당 아이템 노드의 카운트를 감소
         if (current->item == item) {
-            // 찾았을 경우 해당 아이템 노드를 삭제하고 메모리 해제
-            if (prev != NULL) {
-                prev->next = current->next;
+            current->count--;
+
+            // 만약 해당 아이템의 카운트가 0이면 노드를 삭제하고 메모리 해제
+            if (current->count == 0) {
+                if (prev != NULL) {
+                    // 이전 노드가 존재하면 해당 노드의 다음 노드를 현재 노드의 다음 노드로 설정
+                    prev->next = current->next;
+                }
+                else {
+                    // 이전 노드가 없으면 현재 노드가 리스트의 첫 번째 노드이므로 리스트의 시작을 현재 노드의 다음 노드로 설정
+                    ItemHead = current->next;
+                }
+                free(current); // 현재 노드 메모리 해제
             }
-            else {
-                ItemHead = current->next;
-            }
-            free(current);
+
             break;
         }
 
@@ -619,39 +692,98 @@ void RemoveUsedItem(char item) {
 
 void StopItem() {
 
-    if (ItemHead != NULL && ItemHead->item == '+') {
+    int plusItemCnt = ItemCnt('+');
+
+    if (plusItemCnt > 0) {
         TimeStop = TRUE;
-        ItemNode* temp = ItemHead;
-        ItemHead = ItemHead->next;
-        free(temp);
+        RemoveUsedItem('+');
+        DrawScreen();
+        delay(5000);
+        TimeStop = FALSE;
     }
-
-    //ItemCnt();
 }
 
-int ItemCnt() {
+void preHide() {
 
-    int itemcnt = 0;
-    ItemNode* current = ItemHead;
+    int HideItemCnt = ItemCnt('/');
 
-    while (current != NULL) {
-        itemcnt += current->count;
-        current = current->next;
+    if (HideItemCnt > 0) {
+        RemoveUsedItem('/');
+        pre(FALSE);
+        Sleep(500);
+        next_brick(TRUE);
     }
-
-    return itemcnt;
 }
 
-void UseStopItem() {
-    // 아이템이 아직 증정되지 않았으면 사용할 수 없음
-    if (ItemHead == NULL || ItemHead->item != '+') {
-        return;
+void RemoveTopLine() {
+
+    int RemoveItemCount = ItemCnt('-');
+
+    // 만약 현재 아이템이 '-'가 아니거나, 아이템이 아직 증정되지 않았다면 함수 실행을 중단합니다.
+    if (RemoveItemCount > 0) {
+
+        // 보드에서 가장 아래에 있는 줄을 삭제합니다.
+        for (int y = BH; y > 0; y--) {
+            for (int x = 1; x < BW + 1; x++) {
+                // 각 칸을 한 칸씩 아래로 이동시킵니다.
+                board[x][y] = board[x][y - 1];
+            }
+        }
+
+        // 보드의 맨 위에 빈 줄을 추가합니다.
+        for (int x = 1; x < BW + 1; x++) {
+            board[x][1] = EMPTY;
+        }
+        RemoveUsedItem('-');
+        DrawScreen();
     }
-    TimeStop = TRUE;
-    DrawScreen(board, 0, 0);
-    delay(5000);
-    TimeStop = FALSE;
-    RemoveUsedItem('+');
-    DrawScreen(board, 0, 0);
-    ItemCnt();
+}
+
+void BombItem() {
+
+    int BombItemCnt = ItemCnt('*');
+
+    if (BombItemCnt > 0) {
+        int bombRange = 1;
+
+        // 폭발 범위 내의 블록을 제거
+        for (int i = -bombRange; i <= bombRange; i++) {
+            for (int j = -bombRange; j <= bombRange; j++) {
+                int targetX = nx + i;
+                int targetY = ny + j;
+
+                // 범위를 벗어나지 않도록 체크
+                if (targetX >= 1 && targetX <= BW && targetY >= 1 && targetY <= BH) {
+
+                    // 폭탄 모양 출력
+                    DrawBomb(targetX, targetY);
+                    // 일정 시간 동안 딜레이
+                    delay(100);
+                    // 폭탄이 터진 위치를 다시 보드로 설정
+                    board[targetX][targetY] = EMPTY;
+
+                }
+            }
+        }
+        RemoveUsedItem('*');
+        DrawScreen();
+
+        nx = BW / 2;
+        ny = 3;
+        rot = 0;
+        next_brick(TRUE);
+    }
+
+}
+
+void DrawBomb(int x, int y) {
+    // 폭탄 모양 출력
+    putsxy(BX + x * 2, BY + y, "╔═╗");
+    putsxy(BX + x * 2, BY + y + 1, "║*║");
+    putsxy(BX + x * 2, BY + y + 2, "╚═╝");
+
+    // 게임 보드에서 해당 위치를 EMPTY로 설정
+    board[x][y] = EMPTY;
+    board[x][y + 1] = EMPTY;
+    board[x][y + 2] = EMPTY;
 }
