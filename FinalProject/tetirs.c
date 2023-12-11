@@ -27,13 +27,14 @@ enum { w = 119, a = 97, s = 115, d = 100 };
 #define BH 20
 
 void DrawScreen(int board[BW + 2][BH + 2], int x, int y);
+void DrawScreenForPL2(int board2[BW + 2][BH + 2], int x, int y);
 //void DrawScreen();
 BOOL ProcessKey();
 BOOL ProcessKeyForPL2();
 void PrintBrick(BOOL Show);
 void PrintBrickOnBoard2(BOOL Show);
 int GetAround(int x, int y, int b, int r);
-int GetAroundForPL2(int x2, int y2,int b2, int r2);
+int GetAroundForPL2(int x2, int y2, int b2, int r2);
 BOOL MoveDown();
 BOOL TimeStop = FALSE;
 BOOL TimeStop2 = FALSE;//시간 정지 상태
@@ -89,6 +90,7 @@ void resizeConsole(int width, int height) {
 struct Point {
     int x, y;
 };
+
 
 struct Point Shape[][4][4] = {
    { { 0,0,1,0,2,0,-1,0 },{ 0,0,0,1,0,-1,0,-2 },{ 0,0,1,0,2,0,-1,0 },{ 0,0,0,1,0,-1,0,-2 } },
@@ -197,9 +199,10 @@ int main() {
     }
     else {
         DrawScreen(board1, 0, 0);
-        DrawScreen(board2, 40, 0);
+        DrawScreenForPL2(board2, 40, 0);
     }
 
+    //이 부분 수정 의심 중
     for (x = 0; x < BW + 2; x++) {
         for (y = 0; y < BH + 2; y++) {
             if (y == 0 || y == BH + 1 || x == 0 || x == BW + 1) {
@@ -215,32 +218,36 @@ int main() {
 
     DrawScreen(board, 0, 0);
     if (gameMode == 2) {
-        DrawScreen(board2, 40, 0);
+        DrawScreenForPL2(board2, 40, 0);
     }
+    nFrame = 20;
 
     // 전체 게임 루프
     //수정필요!!
-    for (; ;) {
-        gotoxy(50, 9); printf("LV : %d", level);
-        brick = random(sizeof(Shape) / sizeof(Shape[0])); //벽돌 하나 출력
-        brickForPL2 = random(sizeof(Shape) / sizeof(Shape[0]));
-        nx = BW / 2;
-        nx2 = BW / 2;
-        ny = 3;
-        ny2 = 3;
-        rot = 0;
-        rotForPL2 = 0;
-        n_rot = 0;
-        brick = n_brick;
-        n_brick = rand() % (sizeof(Shape) / sizeof(Shape[0]));
-        PrintBrick(TRUE);
-        pre();
-        next_brick(TRUE);
-        if (gameMode == 2) {
-            PrintBrickOnBoard2(TRUE);
-        }
-
-        if (GetAround(nx, ny, brick, rot) != EMPTY) break; // 빈칸이 없으면 끝
+    if (gameMode == 1) {
+        for (; ;) {
+            gotoxy(50, 9); printf("LV : %d", level);
+            brick = random(sizeof(Shape) / sizeof(Shape[0])); //벽돌 하나 출력
+            //brickForPL2 = random(sizeof(Shape) / sizeof(Shape[0]));
+            nx = BW / 2;
+            //nx2 = BW / 2;
+            ny = 3;
+            //ny2 = 3;
+            rot = 0;
+            //rotForPL2 = 0;
+            n_rot = 0;
+            brick = n_brick;
+            n_brick = rand() % (sizeof(Shape) / sizeof(Shape[0]));
+            PrintBrick(TRUE);
+            pre();
+            next_brick(TRUE);
+            if (GetAround(nx, ny + 1, brick, rot) != EMPTY) {
+                // 첫 번째 보드에서 충돌 발생 시
+                TestFull();
+                PlaySound(TEXT(R"(C:\Users\Arthur\Desktop\sound_Asset\ping.wav)"), NULL, SND_FILENAME | SND_ASYNC);
+                return TRUE;
+            }
+            if (GetAround(nx, ny, brick, rot) != EMPTY) break; // 빈칸이 없으면 끝
 
         if (GetAroundForPL2(nx2, ny2, brickForPL2, rotForPL2) != EMPTY) break;
 
@@ -264,6 +271,7 @@ int main() {
              
                 }
             }
+            if (GetAround(nx, ny, brick, rot) != EMPTY) break; // 빈칸이 없으면 끝
 
             if (gameMode == 2 && ProcessKeyForPL2()) {
                     MoveDownOnBoard2();
@@ -277,22 +285,26 @@ int main() {
     //PlaySound(NULL, NULL, 0);
     putxyfn(30, 15, "Best score: %d \n", score);
     showcursor(TRUE);
+
 }
 
-void ShowAndDropItem(int x, int y, int item)
+
+
+/*void ShowAndDropItem(int x, int y, int item)
 {
     for (int i = 0; i < 4; i++) {
         gotoxy(BX + (x + Shape[item][0][i].x) * 2, BY + y + Shape[item][0][i].y);
         puts(arTile[BRICK]);
         delay(100);  // 블록이 떨어지는 속도를 조절하기 위한 딜레이
     }
-}
+}*/
 
 void DrawScreen(int board[BW + 2][BH + 2], int x, int y) {
 
     for (int i = 0; i < BW + 2; i++) {
         for (int j = 0; j < BH + 2; j++) {
             putsxy(BX + x * 2 + i * 2, BY + y + j, arTile[board[i][j]]);
+            putsxy(50, 12, "Drawscreen is working!");
         }
     }
 
@@ -321,7 +333,7 @@ void DrawScreen(int board[BW + 2][BH + 2], int x, int y) {
         printf("4(폭탄): %d", ItemCnt2('4'));
     }
 
-    if (board == board1) {
+    if (gameMode == 1||2) {
         putsxy(50, 2, "Player 1");
         putxyfn(50, 8, "Score: %d", score);
     }
@@ -331,6 +343,27 @@ void DrawScreen(int board[BW + 2][BH + 2], int x, int y) {
         putxyfn(130, 9, "Lv: %d", level2);
     }
 }
+
+/*void DrawScreenForPL2(int board2[BW + 2][BH + 2], int x, int y) {
+    for (int i = 0; i < BW + 2; i++) {
+        for (int j = 0; j < BH + 2; j++) {
+            putsxy(BX + x * 2 + i * 2, BY + y + j, arTile[board2[i][j]]);
+            putsxy(110, 12, "Drawscreen is working!");//작동을 하지 않음!!! 디버깅 결과
+        }
+    }
+}*/
+void DrawScreenForPL2(int board2[BW + 2][BH + 2], int x, int y) {
+    for (int i = 0; i < BW + 2; i++) {
+        for (int j = 0; j < BH + 2; j++) {
+            if (gameMode == 2) {
+                putsxy(BX + i * 2 + 80, BY + y + j, arTile[board2[i][j]]);
+            }
+            //putsxy(BX + i * 2 + 80, BY + y + j, arTile[board2[i][j]]);
+            putsxy(110, 12, "Drawscreen is working!");
+        }
+    }
+}
+
 
 BOOL ProcessKey()
 {
@@ -344,6 +377,7 @@ BOOL ProcessKey()
                     PrintBrick(FALSE);
                     nx--;
                     PrintBrick(TRUE);
+                    putxyfn(50, 10, "input: %d", ch);
                 }
                 break;
             case RIGHT:
@@ -351,6 +385,7 @@ BOOL ProcessKey()
                     PrintBrick(FALSE);
                     nx++;
                     PrintBrick(TRUE);
+                    putxyfn(50, 10, "input: %d", ch);
                 }
                 break;
             case UP:
@@ -358,11 +393,13 @@ BOOL ProcessKey()
                     PrintBrick(FALSE);
                     rot = (rot + 1) % 4;
                     PrintBrick(TRUE);
+                    putxyfn(50, 10, "input: %d", ch);
                 }
                 break;
             case DOWN:
                 if (MoveDown()) {
                     return TRUE;
+                    putxyfn(50, 10, "input: %d", ch);
                 }
                 break;
 
@@ -508,6 +545,7 @@ void PrintBrickOnBoard2(BOOL Show)
     }
 }
 
+
 int GetAround(int x, int y, int b, int r)
 {
     int k = EMPTY;
@@ -543,6 +581,7 @@ void TestFull()
         for (int x = 1; x < BW + 1; x++) {
             if (board[x][y] == EMPTY) {
                 bFull = FALSE;
+                putsxy(50, 15, "hit!");
                 break;
             }
         }
@@ -553,6 +592,7 @@ void TestFull()
                     board[x][ty] = board[x][ty - 1];
                 }
             }
+            putsxy(50, 16, "remove!");
             score += 100;
             if (score % 100 == 0) {
                 LevelUp();
@@ -564,12 +604,11 @@ void TestFull()
 
     }
 }
-//여기
 void TestFullOnBoard2()
 {
     // 바닥에 내려앉은 벽돌 기록
-    for (int i = 0; i < 4; i++) {
-        board2[nx2 + Shape[brickForPL2][rotForPL2][i].x][ny2 + Shape[brickForPL2][rotForPL2][i].y] = BRICK;
+    for (int j = 0; j < 4; j++) {
+        board2[nx2 + Shape[brickForPL2][rotForPL2][j].x][ny2 + Shape[brickForPL2][rotForPL2][j].y] = BRICK;
     }
 
     // 수평으로 가득찬 벽돌 제거
@@ -578,6 +617,7 @@ void TestFullOnBoard2()
         for (int x = 1; x < BW + 1; x++) {
             if (board2[x][y] == EMPTY) {
                 bFull = FALSE;
+                putsxy(110, 13, "hit!");
                 break;
             }
         }
@@ -669,38 +709,30 @@ void AddItem(char item, int count) { // 새로운 아이템을 아이템 리스�
         current = current->next; // 다음 노드로 이동
     }
 
-    // 새로운 아이템을 저장할 노드 동적 할당
+void AddItem(char item, int count) {
+    // 메모리 할당 시도
     ItemNode* newItem = (ItemNode*)malloc(sizeof(ItemNode));
     if (newItem == NULL) {
-        // 메모리 할당 실패 시 에러 메시지 출력 후 함수 종료
+        // 실패 시 처리
         fprintf(stderr, "메모리 할당에 실패했습니다.\n");
-        return;
+
     }
 
-    // 새로운 아이템 정보 설정
+    // 메모리 초기화
     newItem->item = item;
     newItem->count = count;
-    newItem->next = NULL;
+    newItem->next = NULL;  // 새 노드의 다음 노드는 초기에는 NULL로 설정합니다.
 
     // 연결 리스트에 노드 추가
-    if (ItemHead == NULL) {
-        // 리스트가 비어있으면 새로운 노드를 리스트의 첫 번째 노드로 설정
-        ItemHead = newItem;
-    }
-    else {
-        // 리스트가 비어있지 않으면 끝까지 순회하여 마지막 노드 뒤에 새로운 노드 추가
-        current = ItemHead;
-        while (current->next != NULL) {
-            current = current->next;
-        }
-        current->next = newItem;
-    }
+    newItem->next = ItemHead;
+    ItemHead = newItem;
 }
+
 
 void LevelUp() {
 
     level++;
-    DrawScreen(board,0,0);
+    DrawScreen(board, 0, 0);
     delay(100);
 
     char randomItem;
@@ -746,28 +778,19 @@ int ItemCnt(char targetItem) { // 현재 보유한 아이템의 총 개수를 �
 void RemoveUsedItem(char item) { // 사용된 아이템을 아이템 리스트에서 제거하는 함수 
     // 현재 아이템 리스트의 시작 노드를 가리키는 포인터
     ItemNode* current = ItemHead;
-    // 현재 노드의 이전 노드를 가리키는 포인터
     ItemNode* prev = NULL;
 
-    // 아이템 리스트를 순회하면서 사용한 아이템 찾기
+    // 아이템 리스트를 순회하며 사용한 아이템 찾기
     while (current != NULL) {
-        // 찾았을 경우 해당 아이템 노드의 카운트를 감소
         if (current->item == item) {
-            current->count--;
-
-            // 만약 해당 아이템의 카운트가 0이면 노드를 삭제하고 메모리 해제
-            if (current->count == 0) {
-                if (prev != NULL) {
-                    // 이전 노드가 존재하면 해당 노드의 다음 노드를 현재 노드의 다음 노드로 설정
-                    prev->next = current->next;
-                }
-                else {
-                    // 이전 노드가 없으면 현재 노드가 리스트의 첫 번째 노드이므로 리스트의 시작을 현재 노드의 다음 노드로 설정
-                    ItemHead = current->next;
-                }
-                free(current); // 현재 노드 메모리 해제
+            // 찾았을 경우 해당 아이템 노드를 삭제하고 메모리 해제
+            if (prev != NULL) {
+                prev->next = current->next;
             }
-
+            else {
+                ItemHead = current->next;
+            }
+            free(current);
             break;
         }
 
@@ -779,51 +802,27 @@ void RemoveUsedItem(char item) { // 사용된 아이템을 아이템 리스트�
 
 void StopItem() {
 
-    int plusItemCnt = ItemCnt('+');
-
-    if (plusItemCnt > 0) {
+    if (ItemHead != NULL && ItemHead->item == '+') {
         TimeStop = TRUE;
-        RemoveUsedItem('+');
-        DrawScreen(board, 0, 0);
-        delay(5000);
-        TimeStop = FALSE;
+        ItemNode* temp = ItemHead;
+        ItemHead = ItemHead->next;
+        free(temp);
     }
+
+    //ItemCnt();
 }
 
-void preHide() {
+int ItemCnt() {
 
-    int HideItemCnt = ItemCnt('/');
+    int itemcnt = 0;
+    ItemNode* current = ItemHead;
 
-    if (HideItemCnt > 0) {
-        RemoveUsedItem('/');
-        pre(FALSE);
-        Sleep(500);
-        next_brick(TRUE);
+    while (current != NULL) {
+        itemcnt += current->count;
+        current = current->next;
     }
-}
 
-void RemoveTopLine() {
-
-    int RemoveItemCount = ItemCnt('-');
-
-    // 만약 현재 아이템이 '-'가 아니거나, 아이템이 아직 증정되지 않았다면 함수 실행을 중단합니다.
-    if (RemoveItemCount > 0) {
-
-        // 보드에서 가장 아래에 있는 줄을 삭제합니다.
-        for (int y = BH; y > 0; y--) {
-            for (int x = 1; x < BW + 1; x++) {
-                // 각 칸을 한 칸씩 아래로 이동시킵니다.
-                board[x][y] = board[x][y - 1];
-            }
-        }
-
-        // 보드의 맨 위에 빈 줄을 추가합니다.
-        for (int x = 1; x < BW + 1; x++) {
-            board[x][1] = EMPTY;
-        }
-        RemoveUsedItem('-');
-        DrawScreen(board, 0, 0);
-    }
+    return itemcnt;
 }
 
 void BombItem() {
